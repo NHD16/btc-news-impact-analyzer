@@ -1,0 +1,12 @@
+venv/
+.env
+data/
+__pycache__/
+*.pyc
+
+# Frontend
+frontend/node_modules/
+app/static/
+
+# Claude Code local settings (cá nhân, không chia sẻ)
+.claude/settings.local.json
