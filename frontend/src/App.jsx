@@ -4,11 +4,13 @@ import OverallCard from "./components/OverallCard";
 import StatsBar from "./components/StatsBar";
 import NewsList from "./components/NewsList";
 import HistoryList from "./components/HistoryList";
+import NotificationBanner from "./components/NotificationBanner";
 import { useAnalysis } from "./useAnalysis";
 import { fmtCost } from "./utils";
 
 export default function App() {
-  const { result, history, running, error, startRun, openRun } = useAnalysis();
+  const { result, history, running, error, notice, dismissNotice, startRun, openRun } =
+    useAnalysis();
   const [minRelevance, setMinRelevance] = useState(3);
 
   const items = result?.items || [];
@@ -24,6 +26,15 @@ export default function App() {
       />
 
       <main>
+        <NotificationBanner
+          notice={notice}
+          onDismiss={dismissNotice}
+          onView={() => {
+            openRun(notice.run_id);
+            dismissNotice();
+          }}
+        />
+
         {error && <div className="err">Lỗi: {error}</div>}
 
         {hasItems && <OverallCard overall={result.overall} />}
@@ -44,7 +55,7 @@ export default function App() {
           </div>
         )}
 
-        {hasItems && <NewsList items={items} />}
+        {hasItems && <NewsList items={items} newItemIds={result.new_item_ids} />}
 
         {hasItems && (
           <p className="meta footer">

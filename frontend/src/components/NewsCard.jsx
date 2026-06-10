@@ -4,7 +4,7 @@ import { fmtTime } from "../utils";
 const sentimentColor = (s) =>
   s === "good" ? "var(--good)" : s === "bad" ? "var(--bad)" : "var(--flat)";
 
-export default function NewsCard({ item }) {
+export default function NewsCard({ item, isNew }) {
   const d = DIR[item.btc_direction] || DIR.flat;
   return (
     <div className={`card ${d.cls}`}>
@@ -19,6 +19,7 @@ export default function NewsCard({ item }) {
           )}
         </h3>
         <div className="badges">
+          {isNew && <span className="b new">MỚI</span>}
           <span className={`b ${d.cls}`}>{d.label}</span>
           <span className={`b ${item.impact}`}>{IMPACT[item.impact] || item.impact}</span>
         </div>

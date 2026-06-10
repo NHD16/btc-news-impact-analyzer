@@ -11,6 +11,7 @@ Direction = Literal["up", "down", "flat"]
 Impact = Literal["high", "medium", "low"]
 Bias = Literal["bullish", "bearish", "neutral"]
 RunStatus = Literal["running", "done", "error"]
+RunSource = Literal["manual", "auto"]
 
 
 class NewsItem(BaseModel):
@@ -51,7 +52,9 @@ class RunResult(BaseModel):
     started_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     finished_at: str | None = None
     min_relevance: int = 3
+    source: RunSource = "manual"
     items: list[AnalyzedItem] = Field(default_factory=list)
+    new_item_ids: list[str] = Field(default_factory=list)
     overall: Overall = Field(default_factory=Overall)
     cost_usd: float | None = None
     error: str | None = None
@@ -63,6 +66,17 @@ class RunSummary(BaseModel):
     status: RunStatus
     started_at: str
     finished_at: str | None
+    source: RunSource = "manual"
     bias: Bias
     item_count: int
     cost_usd: float | None
+
+
+class Notification(BaseModel):
+    """Thông báo có tin mới sau một lần thu thập."""
+    run_id: str
+    finished_at: str
+    source: RunSource
+    new_count: int
+    new_items: list[AnalyzedItem]
+    overall: Overall

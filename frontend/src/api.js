@@ -48,3 +48,17 @@ export function streamRun(id, { onUpdate, onEnd }) {
   };
   return () => es.close();
 }
+
+// Mở SSE để nhận thông báo khi tự động thu thập phát hiện tin mới.
+// onNotify(notification) gọi mỗi khi có thông báo mới.
+export function streamNotifications(onNotify) {
+  const es = new EventSource("/api/notifications/stream");
+  es.onmessage = (e) => {
+    try {
+      onNotify(JSON.parse(e.data));
+    } catch {
+      /* bỏ qua frame không phải JSON */
+    }
+  };
+  return () => es.close();
+}

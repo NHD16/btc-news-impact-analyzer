@@ -7,6 +7,7 @@ export function useAnalysis() {
   const [history, setHistory] = useState([]);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState(null);
+  const [notice, setNotice] = useState(null);
 
   const loadHistory = useCallback(async () => {
     setHistory(await api.fetchHistory(15));
@@ -54,5 +55,28 @@ export function useAnalysis() {
     loadHistory();
   }, [loadLatest, loadHistory]);
 
-  return { result, history, running, error, startRun, openRun };
+  // Lắng nghe thông báo tin mới từ vòng tự động thu thập.
+  useEffect(() => {
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+
+    const close = api.streamNotifications((note) => {
+      setNotice(note);
+      loadHistory();
+      // Nếu đang xem run mới nhất (không phải lịch sử cũ), cập nhật luôn.
+      api.fetchLatest().then((latest) => {
+        if (latest && latest.id === note.run_id) setResult(latest);
+      });
+
+      if ("Notification" in window && Notification.permission === "granted") {
+        new Notification("BTC News Impact Analyzer", {
+          body: `Có ${note.new_count} tin mới • Xu hướng: ${note.overall.bias}`,
+        });
+      }
+    });
+    return close;
+  }, [loadHistory]);
+
+  return { result, history, running, error, notice, dismissNotice: () => setNotice(null), startRun, openRun };
 }

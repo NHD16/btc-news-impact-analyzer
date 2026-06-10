@@ -6,12 +6,18 @@ import uuid
 from datetime import datetime, timezone
 
 from . import analyzer, collector, db
-from .models import RunResult
+from .config import settings
+from .models import Notification, RunResult, RunSource
 
 # Trạng thái các run đang sống trong tiến trình (live), phục vụ SSE.
 _runs: dict[str, RunResult] = {}
 # Mỗi run có một asyncio.Event báo "vừa có cập nhật" để SSE đẩy đi.
 _events: dict[str, asyncio.Event] = {}
+
+# Các client đang lắng nghe thông báo "có tin mới" (mỗi client 1 hàng đợi).
+_notification_subscribers: set[asyncio.Queue] = set()
+
+MAX_NOTIFY_ITEMS = 5
 
 
 def _now() -> str:
@@ -28,11 +34,26 @@ def _notify(run_id: str) -> None:
         ev.set()
 
 
-async def start_run(min_relevance: int = 3) -> str:
+def subscribe_notifications() -> asyncio.Queue:
+    q: asyncio.Queue = asyncio.Queue()
+    _notification_subscribers.add(q)
+    return q
+
+
+def unsubscribe_notifications(q: asyncio.Queue) -> None:
+    _notification_subscribers.discard(q)
+
+
+async def _broadcast_notification(note: Notification) -> None:
+    for q in list(_notification_subscribers):
+        await q.put(note)
+
+
+async def start_run(min_relevance: int = 3, source: RunSource = "manual") -> str:
     """Tạo run mới, chạy nền, trả về run_id ngay lập tức."""
     run_id = uuid.uuid4().hex[:12]
     run = RunResult(id=run_id, status="running", min_relevance=min_relevance,
-                    started_at=_now())
+                    source=source, started_at=_now())
     _runs[run_id] = run
     _events[run_id] = asyncio.Event()
     await db.save(run)
@@ -42,12 +63,19 @@ async def start_run(min_relevance: int = 3) -> str:
 
 async def _execute(run: RunResult) -> None:
     try:
+        prev = await db.latest()
+        prev_ids = {it.id for it in prev.items} if prev else None
+
         items = await collector.collect_all(min_relevance=run.min_relevance)
         analyzed, overall, cost = await analyzer.analyze(items)
         run.items = analyzed
         run.overall = overall
         run.cost_usd = cost
         run.status = "done"
+
+        # Chỉ tính "tin mới" nếu đã có run trước đó (tránh spam ở lần chạy đầu).
+        if prev_ids is not None:
+            run.new_item_ids = [it.id for it in analyzed if it.id not in prev_ids]
     except Exception as exc:  # noqa: BLE001
         run.status = "error"
         run.error = str(exc)
@@ -55,6 +83,15 @@ async def _execute(run: RunResult) -> None:
         run.finished_at = _now()
         await db.save(run)
         _notify(run.id)
+
+    if run.status == "done" and run.new_item_ids:
+        new_items = [it for it in run.items if it.id in run.new_item_ids]
+        note = Notification(
+            run_id=run.id, finished_at=run.finished_at, source=run.source,
+            new_count=len(new_items), new_items=new_items[:MAX_NOTIFY_ITEMS],
+            overall=run.overall,
+        )
+        await _broadcast_notification(note)
 
 
 async def watch(run_id: str):
@@ -77,3 +114,17 @@ async def watch(run_id: str):
         yield current
         if current.status != "running":
             return
+
+
+async def auto_collect_loop() -> None:
+    """Vòng lặp nền: định kỳ tự thu thập & phân tích, phát thông báo nếu có tin mới."""
+    while True:
+        try:
+            await asyncio.sleep(settings.auto_collect_interval_min * 60)
+            if not settings.auto_collect_enabled:
+                continue
+            await start_run(settings.auto_collect_min_relevance, source="auto")
+        except asyncio.CancelledError:
+            break
+        except Exception as exc:  # noqa: BLE001
+            print(f"[auto-collect] lỗi: {exc}")

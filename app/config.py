@@ -27,6 +27,11 @@ class Settings(BaseSettings):
     max_items: int = 30
     request_timeout: float = 20.0
 
+    # Tự động thu thập định kỳ + thông báo tin mới
+    auto_collect_enabled: bool = True
+    auto_collect_interval_min: int = 30
+    auto_collect_min_relevance: int = 5
+
     # CSDL
     db_path: str = str(DATA_DIR / "history.db")
 

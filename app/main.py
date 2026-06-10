@@ -1,6 +1,7 @@
 """FastAPI app — dashboard phân tích tác động tin tức tới giá BTC."""
 from __future__ import annotations
 
+import asyncio
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -19,7 +20,9 @@ INDEX_HTML = STATIC_DIR / "index.html"
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     db.init()
+    task = asyncio.create_task(service.auto_collect_loop())
     yield
+    task.cancel()
 
 
 app = FastAPI(title="BTC News Impact Analyzer", version="2.0.0", lifespan=lifespan)
@@ -59,6 +62,23 @@ async def stream_run(run_id: str):
 @app.get("/api/history", response_model=list[RunSummary])
 async def get_history(limit: int = Query(20, ge=1, le=100)):
     return await db.history(limit)
+
+
+@app.get("/api/notifications/stream")
+async def stream_notifications():
+    """Server-Sent Events: đẩy thông báo khi có tin mới sau lần thu thập tự động."""
+    queue = service.subscribe_notifications()
+
+    async def gen():
+        try:
+            while True:
+                note = await queue.get()
+                yield f"data: {note.model_dump_json()}\n\n"
+        finally:
+            service.unsubscribe_notifications(queue)
+
+    return StreamingResponse(gen(), media_type="text/event-stream",
+                             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
 # --- Phục vụ giao diện React đã build (sau cùng để không chặn /api/*) ---
