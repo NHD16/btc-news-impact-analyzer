@@ -33,8 +33,6 @@ DỮ LIỆU TIN TỨC:
 {news}
 """
 
-_RANK = {"high": 3, "medium": 2, "low": 1}
-
 
 def _build_payload(items: list[NewsItem]) -> str:
     slim = [{"id": it.id, "source": it.source, "title": it.title,
@@ -87,7 +85,7 @@ async def analyze(items: list[NewsItem]) -> tuple[list[AnalyzedItem], Overall, f
             analysis = Analysis(reason="(không phân tích được tin này)")
         merged.append(AnalyzedItem(**it.model_dump(), **analysis.model_dump()))
 
-    merged.sort(key=lambda x: (_RANK.get(x.impact, 0), x.confidence), reverse=True)
+    merged.sort(key=lambda x: x.published, reverse=True)
 
     raw_overall = parsed.get("overall", {})
     try:
