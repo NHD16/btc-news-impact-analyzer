@@ -32,6 +32,11 @@ class Settings(BaseSettings):
     auto_collect_interval_min: int = 30
     auto_collect_min_relevance: int = 5
 
+    # Thông báo ra ngoài (tùy chọn)
+    discord_webhook_url: str = ""
+    telegram_bot_token: str = ""
+    telegram_chat_id: str = ""
+
     # CSDL
     db_path: str = str(DATA_DIR / "history.db")
 

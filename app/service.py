@@ -5,7 +5,7 @@ import asyncio
 import uuid
 from datetime import datetime, timezone
 
-from . import analyzer, collector, db
+from . import analyzer, collector, db, notifier
 from .config import settings
 from .models import Notification, RunResult, RunSource
 
@@ -92,6 +92,7 @@ async def _execute(run: RunResult) -> None:
             overall=run.overall,
         )
         await _broadcast_notification(note)
+        await notifier.notify_external(note)
 
 
 async def watch(run_id: str):
