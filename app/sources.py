@@ -24,16 +24,45 @@ RSS_FEEDS: list[Feed] = [
     Feed(name="Al Jazeera (World)", url="https://www.aljazeera.com/xml/rss/all.xml", category="macro"),
     Feed(name="BBC World", url="http://feeds.bbci.co.uk/news/world/rss.xml", category="macro"),
     Feed(name="CNBC - Economy", url="https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=20910258", category="macro"),
+    Feed(name="MarketWatch", url="https://feeds.content.dowjones.io/public/rss/mw_topstories", category="macro"),
 
     # --- Crypto ---
     Feed(name="CoinDesk", url="https://www.coindesk.com/arc/outboundfeeds/rss/", category="crypto"),
     Feed(name="Cointelegraph", url="https://cointelegraph.com/rss", category="crypto"),
     Feed(name="Bitcoin Magazine", url="https://bitcoinmagazine.com/.rss/full/", category="crypto"),
+    Feed(name="Decrypt", url="https://decrypt.co/feed", category="crypto"),
+    Feed(name="NewsBTC", url="https://www.newsbtc.com/feed/", category="crypto"),
+    Feed(name="BeInCrypto", url="https://beincrypto.com/feed/", category="crypto"),
+    Feed(name="AMBCrypto", url="https://ambcrypto.com/feed/", category="crypto"),
+    Feed(name="Crypto Briefing", url="https://cryptobriefing.com/feed/", category="crypto"),
 ]
 
-# Tài khoản X (Twitter) qua instance Nitter của bạn (X không có RSS công khai).
-# Ví dụ: Feed(name="Elon Musk (X)", url="https://nitter.net/elonmusk/rss", category="social")
-NITTER_FEEDS: list[Feed] = []
+# Tài khoản X (Twitter) qua Nitter self-hosted.
+# Đặt NITTER_BASE_URL trong .env (vd: https://nitter.yourdomain.com) để kích hoạt.
+# Các instance Nitter công khai gần như không còn hoạt động từ 2024.
+_NITTER_ACCOUNTS: list[tuple[str, str, str]] = [
+    ("Reuters", "Reuters", "macro"),
+    ("AP Breaking News", "APBreaking", "macro"),
+    ("Watcher Guru", "WatcherGuru", "crypto"),
+    ("Bitcoin Archive", "BTC_Archive", "crypto"),
+    ("Michael Saylor", "saylor", "crypto"),
+    ("Documenting Bitcoin", "DocumentingBTC", "crypto"),
+    ("Walter Bloomberg", "DeItaone", "macro"),
+]
+
+
+def _build_nitter_feeds() -> list[Feed]:
+    from .config import settings
+    base = settings.nitter_base_url.rstrip("/")
+    if not base:
+        return []
+    return [
+        Feed(name=f"{name} (X)", url=f"{base}/{handle}/rss", category=cat)
+        for name, handle, cat in _NITTER_ACCOUNTS
+    ]
+
+
+NITTER_FEEDS: list[Feed] = _build_nitter_feeds()
 
 ALL_FEEDS = RSS_FEEDS + NITTER_FEEDS
 

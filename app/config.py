@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     auto_collect_interval_min: int = 30
     auto_collect_min_relevance: int = 5
 
+    # Nitter self-hosted (để trống nếu không có)
+    nitter_base_url: str = ""
+
     # Thông báo ra ngoài (tùy chọn)
     discord_webhook_url: str = ""
     telegram_bot_token: str = ""
