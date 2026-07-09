@@ -22,5 +22,5 @@ if [ ! -f app/static/index.html ]; then
   (cd frontend && npm install && npm run build)
 fi
 
-echo "🚀 Khởi động web server tại http://127.0.0.1:8000"
-exec ./venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 "$@"
+echo "🚀 Khởi động web server tại http://127.0.0.1:8000 (tự reload khi sửa app/*.py)"
+exec ./venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload "$@"

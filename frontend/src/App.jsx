@@ -61,7 +61,7 @@ export default function App() {
           <p className="meta footer">
             Cập nhật:{" "}
             {result.finished_at
-              ? new Date(result.finished_at).toLocaleString("vi-VN")
+              ? `${new Date(result.finished_at).toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" })} UTC+7`
               : "—"}
             {result.cost_usd ? `  •  Chi phí Claude: ${fmtCost(result.cost_usd)}` : ""}
           </p>

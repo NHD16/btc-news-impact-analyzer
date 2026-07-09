@@ -2,10 +2,10 @@
 from __future__ import annotations
 
 import asyncio
+import calendar
 import hashlib
 import html
 import re
-import time
 from datetime import datetime, timezone
 
 import feedparser
@@ -44,7 +44,7 @@ def _entry_time(entry) -> str:
     for attr in ("published_parsed", "updated_parsed"):
         t = getattr(entry, attr, None)
         if t:
-            return datetime.fromtimestamp(time.mktime(t), tz=timezone.utc).isoformat()
+            return datetime.fromtimestamp(calendar.timegm(t), tz=timezone.utc).isoformat()
     return datetime.now(timezone.utc).isoformat()
 
 
