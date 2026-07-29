@@ -29,7 +29,7 @@ class Settings(BaseSettings):
 
     # Tự động thu thập định kỳ + thông báo tin mới
     auto_collect_enabled: bool = True
-    auto_collect_interval_min: int = 30
+    auto_collect_interval_min: int = 60
     auto_collect_min_relevance: int = 5
 
     # Nitter self-hosted (để trống nếu không có)
